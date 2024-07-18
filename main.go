@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cobra"
@@ -41,6 +42,17 @@ type Driver struct {
 	SessionKey    int    `json:"session_key"`
 	TeamColour    string `json:"team_colour"`
 	TeamName      string `json:"team_name"`
+}
+
+func asciiImage(img string) (string, error) {
+	cmd := exec.Command("jp2a", img, "--color", "--width=45")
+	output, err := cmd.Output()
+
+	if err != nil {
+		return "", fmt.Errorf("Error converting image to ASCII: %v", err)
+	}
+
+	return string(output), nil
 }
 
 func driverLeaderboard(cmd *cobra.Command, args []string) {
@@ -90,12 +102,10 @@ func displayDriver(cmd *cobra.Command, args []string) {
 		log.Fatal("Error fecthing driver details: ", err)
 	}
 
-	fmt.Println("\033[1mDriver Details:\033[0m")
-	fmt.Println(TeamColour[driver.TeamName], "• Name:", driver.FirstName, driver.LastName, driver.DriverNumber)
-	fmt.Println(TeamColour[driver.TeamName], "• Team:", driver.TeamName)
-	fmt.Println(TeamColour[driver.TeamName], "• Country:", driver.CountryCode)
-	fmt.Println(TeamColour[driver.TeamName], "• Broadcast:", driver.BroadcastName)
-	fmt.Println(TeamColour[driver.TeamName], "• Headshot:", driver.HeadshotURL)
+	driverIcon, err := asciiImage(driver.HeadshotURL)
+
+	fmt.Println(driverIcon)
+	fmt.Printf("%s	 %s %s [%d] // %s\n", TeamColour[driver.TeamName], driver.FirstName, driver.LastName, driver.DriverNumber, driver.TeamName)
 }
 
 func main() {
