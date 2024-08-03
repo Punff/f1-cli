@@ -44,6 +44,19 @@ type Driver struct {
 	TeamName      string `json:"team_name"`
 }
 
+type Car struct {
+	Brake        int     `json:"brake"`
+	Date         string  `json:"date"`
+	DriverNumber int     `json:"driver_number"`
+	DRS          int     `json:"drs"`
+	MeetingKey   int     `json:"meeting_key"`
+	NGear        int     `json:"n_gear"`
+	RPM          int     `json:"rpm"`
+	SessionKey   int     `json:"session_key"`
+	Speed        float64 `json:"speed"`
+	Throttle     int     `json:"throttle"`
+}
+
 func asciiImage(img string) (string, error) {
 	cmd := exec.Command("jp2a", img, "--color", "--width=45")
 	output, err := cmd.Output()
@@ -108,6 +121,20 @@ func displayDriver(cmd *cobra.Command, args []string) {
 	fmt.Printf("%s	 %s %s [%d] // %s\n", TeamColour[driver.TeamName], driver.FirstName, driver.LastName, driver.DriverNumber, driver.TeamName)
 }
 
+func displaySpeed(cmd *cobra.Command, args []string) {
+	driverNumber := args[0]
+	url := fmt.Sprintf("https://api.openf1.org/v1/car_data?driver_number=%s&session_key=latest", driverNumber)
+
+	c := resty.New()
+	resp, _ := c.R().
+		SetResult(&[]Car{}).
+		Get(url)
+
+	car := *resp.Result().(*[]Car)
+
+	fmt.Printf("Speed: %.2f km/h\n", car[0].Speed)
+}
+
 func main() {
 	var rootCmd = &cobra.Command{Use: "f1"}
 
@@ -123,8 +150,15 @@ func main() {
 		Run:   displayDriver,
 	}
 
+	var speedCmd = &cobra.Command{
+		Use:   "speed [driver number]",
+		Short: "Get speed of driver",
+		Run:   displaySpeed,
+	}
+
 	rootCmd.AddCommand(standingsCmd)
 	rootCmd.AddCommand(driverCmd)
+	rootCmd.AddCommand(speedCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
